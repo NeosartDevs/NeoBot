@@ -4,15 +4,24 @@ import random
 import sqlite3
 import re
 import aiogram
+from random import choice
 from aiogram import Bot, Dispatcher, types
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Command
-from aiogram.utils import executor
+from aiogram.filters.command import Command
+from aiogram import F
+from aiogram.types import Message
+from aiogram.enums import ParseMode
+from aiogram.fsm.context import FSMContext
 import datetime
 from datetime import datetime, timedelta
 
-bot = Bot(token="Токен")
-dp = Dispatcher(bot)
+
+# Объект бота
+bot = Bot(token="bot_token")
+# Диспетчер
+dp = Dispatcher()
+print("Бот запущен")
+
+dp = Dispatcher()
 
 # Подключиться к базе данных SQLite
 conn1 = sqlite3.connect("jokes.db")
@@ -22,15 +31,13 @@ cursor1 = conn1.cursor()
 cursor1.execute("CREATE TABLE IF NOT EXISTS jokes (id INTEGER PRIMARY KEY, joke TEXT)")
 conn1.commit()
 
-
-
 conn5 = sqlite3.connect("ignor.db")
 cursor5 = conn5.cursor()
 cursor5.execute("""CREATE TABLE IF NOT EXISTS ignor (user_id INTEGER PRIMARY KEY)""")
 conn5.commit()
 
 
-@dp.message_handler(commands="ignor")
+@dp.message(Command("ignor"))
 async def ignor_user(message: types.Message, state: FSMContext):
     if message.from_user.id != 6881556719:
         await message.reply("У вас нет прав для использования этой команды.")
@@ -41,7 +48,7 @@ async def ignor_user(message: types.Message, state: FSMContext):
     conn5.commit()
     await message.reply("Пользователь добавлен в черный список.")
 
-@dp.message_handler(commands="deleteignor")
+@dp.message(Command("deleteignor"))
 async def delete_ignor_user(message: types.Message, state: FSMContext):
     if message.from_user.id != 6881556719:
         await message.reply("У вас нет прав для использования этой команды.")
@@ -52,18 +59,9 @@ async def delete_ignor_user(message: types.Message, state: FSMContext):
     conn5.commit()
     await message.reply("Пользователь удален из черного списка.")
 
-@dp.message_handler(content_types=types.ContentType.NEW_CHAT_MEMBERS) #greeting new users
-async def new_chat_member_handler(message: types.Message):
-    for member in message.new_chat_members:
-        await message.reply(f"Привет, {member.full_name}!")
-
-@dp.message_handler(content_types=types.ContentType.LEFT_CHAT_MEMBER) #farewell to departed users
-async def left_chat_member_handler(message: types.Message):
-    member = message.left_chat_member
-    await message.reply(f"До свидания, {member.full_name}!")
 
 # Обработчик команды /monetka
-@dp.message_handler(commands=["monetka"])
+@dp.message(Command("monetka"))
 async def monetka(message: aiogram.types.Message):
     user_id = message.from_user.id
     cursor5.execute("SELECT * FROM ignor WHERE user_id = ?", (user_id,))
@@ -81,7 +79,7 @@ async def monetka(message: aiogram.types.Message):
             await message.answer("Вы подбросили монетку и вам выпала решка.")
 
 # Обработчик команды /start
-@dp.message_handler(commands=["start"])
+@dp.message(Command("start"))
 async def start(message: aiogram.types.Message):
     user_id = message.from_user.id
     cursor5.execute("SELECT * FROM ignor WHERE user_id = ?", (user_id,))
@@ -97,7 +95,7 @@ def is_creator(user_id):
     return user_id in [7178621498, 6881556719]
 
 # Обработчик команды /addanekdot
-@dp.message_handler(Command("addanekdot"))
+@dp.message(Command("addanekdot"))
 async def add_anekdot(message: types.Message, state: FSMContext):
     # Проверить, является ли пользователь создателем бота
     if not is_creator(message.from_user.id):
@@ -116,7 +114,7 @@ async def add_anekdot(message: types.Message, state: FSMContext):
 
 
 # Обработчик команды /anekdot
-@dp.message_handler(Command("anekdot"))
+@dp.message(Command("anekdot"))
 async def get_anekdot(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     cursor5.execute("SELECT * FROM ignor WHERE user_id = ?", (user_id,))
@@ -132,7 +130,7 @@ async def get_anekdot(message: types.Message, state: FSMContext):
         await message.answer(joke)
 
 # Обработчик команды /anekdotlist
-@dp.message_handler(Command("anekdotlist"))
+@dp.message(Command("anekdotlist"))
 async def get_anekdot_list(message: types.Message, state: FSMContext):
     # Проверить, является ли пользователь создателем бота
     if not is_creator(message.from_user.id):
@@ -152,7 +150,7 @@ async def get_anekdot_list(message: types.Message, state: FSMContext):
 
 
 # Обработчик команды /deleteanekdot
-@dp.message_handler(Command("deleteanekdot"))
+@dp.message(Command("deleteanekdot"))
 async def delete_anekdot(message: types.Message, state: FSMContext):
     # Проверить, является ли пользователь создателем бота
     if not is_creator(message.from_user.id):
@@ -188,7 +186,7 @@ conn2.commit()
 
 
 # Обработчик команды /addfact
-@dp.message_handler(Command("addfact"))
+@dp.message(Command("addfact"))
 async def add_fact(message: types.Message, state: FSMContext):
     # Проверить, является ли пользователь создателем бота
     if not is_creator(message.from_user.id):
@@ -207,7 +205,7 @@ async def add_fact(message: types.Message, state: FSMContext):
 
 
 # Обработчик команды /fact
-@dp.message_handler(Command("fact"))
+@dp.message(Command("fact"))
 async def get_fact(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     cursor5.execute("SELECT * FROM ignor WHERE user_id = ?", (user_id,))
@@ -223,7 +221,7 @@ async def get_fact(message: types.Message, state: FSMContext):
         await message.answer(fact)
 
 # Обработчик команды /factlist
-@dp.message_handler(Command("factlist"))
+@dp.message(Command("factlist"))
 async def get_fact_list(message: types.Message, state: FSMContext):
     # Проверить, является ли пользователь создателем бота
     if not is_creator(message.from_user.id):
@@ -243,7 +241,7 @@ async def get_fact_list(message: types.Message, state: FSMContext):
 
 
 # Обработчик команды /deletefact
-@dp.message_handler(Command("deletefact"))
+@dp.message(Command("deletefact"))
 async def delete_fact(message: types.Message, state: FSMContext):
     # Проверить, является ли пользователь создателем бота
     if not is_creator(message.from_user.id):
@@ -275,7 +273,7 @@ conn.commit()
 
 
 # Обработчик команды /addbirthdays
-@dp.message_handler(Command("addbirthdays"))
+@dp.message(Command("addbirthdays"))
 async def add_birthdays(message: types.Message, state: FSMContext):
     # Проверить, указана ли дата рождения в сообщении
     user_id = message.from_user.id
@@ -304,7 +302,7 @@ async def add_birthdays(message: types.Message, state: FSMContext):
 
 
 # Обработчик команды /birthdays
-@dp.message_handler(Command("birthdays"))
+@dp.message(Command("birthdays"))
 async def get_birthdays(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     cursor5.execute("SELECT * FROM ignor WHERE user_id = ?", (user_id,))
@@ -331,7 +329,7 @@ async def get_birthdays(message: types.Message, state: FSMContext):
         await message.answer(f"До вашего дня рождения осталось {days_to_birthday} дней.")
        
 # Обработчик команды /deletebirthdays
-@dp.message_handler(Command("deletebirthdays"))
+@dp.message(Command("deletebirthdays"))
 async def delete_birthdays(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     cursor5.execute("SELECT * FROM ignor WHERE user_id = ?", (user_id,))
@@ -347,8 +345,10 @@ async def delete_birthdays(message: types.Message, state: FSMContext):
         await message.answer("Ваша дата рождения успешно удалена.")
 
 
+# Запуск процесса поллинга новых апдейтов
+async def main():
+    await dp.start_polling(bot)
 
-
-# Запуск бота
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
+
